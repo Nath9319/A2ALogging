@@ -1,0 +1,153 @@
+# docker-compose-a2a.yml
+# Real Google A2A Protocol with separate agent containers
+
+version: '3.8'
+
+services:
+  # Research Agent (A2A Protocol)
+  researcher-agent:
+    build: .
+    container_name: researcher-a2a
+    ports:
+      - "8001:8001"
+    environment:
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - AGENT_TYPE=researcher
+      - AGENT_PORT=8001
+    volumes:
+      - ./logs:/app/logs
+    command: |
+      python -c "
+      import asyncio
+      from a2a_demo import ResearcherA2AAgent
+      async def run():
+          agent = ResearcherA2AAgent(8001)
+          await agent.start_server()
+          print('Researcher Agent ready on port 8001')
+          while True:
+              await asyncio.sleep(1)
+      asyncio.run(run())
+      "
+    networks:
+      - a2a-network
+
+  # Analysis Agent (A2A Protocol)
+  analyst-agent:
+    build: .
+    container_name: analyst-a2a
+    ports:
+      - "8002:8002"
+    environment:
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - AGENT_TYPE=analyst
+      - AGENT_PORT=8002
+    volumes:
+      - ./logs:/app/logs
+    command: |
+      python -c "
+      import asyncio
+      from a2a_demo import AnalystA2AAgent
+      async def run():
+          agent = AnalystA2AAgent(8002)
+          await agent.start_server()
+          print('Analyst Agent ready on port 8002')
+          while True:
+              await asyncio.sleep(1)
+      asyncio.run(run())
+      "
+    networks:
+      - a2a-network
+
+  # Reporter Agent (A2A Protocol)
+  reporter-agent:
+    build: .
+    container_name: reporter-a2a
+    ports:
+      - "8003:8003"
+    environment:
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+      - AGENT_TYPE=reporter
+      - AGENT_PORT=8003
+    volumes:
+      - ./logs:/app/logs
+    command: |
+      python -c "
+      import asyncio
+      from a2a_demo import ReporterA2AAgent
+      async def run():
+          agent = ReporterA2AAgent(8003)
+          await agent.start_server()
+          print('Reporter Agent ready on port 8003')
+          while True:
+              await asyncio.sleep(1)
+      asyncio.run(run())
+      "
+    networks:
+      - a2a-network
+
+  # A2A Orchestrator
+  a2a-orchestrator:
+    build: .
+    container_name: a2a-orchestrator
+    environment:
+      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
+      - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+    volumes:
+      - ./logs:/app/logs
+      - ./results:/app/results
+    command: python a2a_demo.py
+    depends_on:
+      - researcher-agent
+      - analyst-agent
+      - reporter-agent
+    networks:
+      - a2a-network
+
+  # Local OpenTelemetry Collector
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: a2a-otel-collector
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./local-otel-config.yaml:/etc/otelcol-contrib/config.yaml:ro
+      - ./trace_files:/traces
+      - ./logs:/logs
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+      - "8888:8888"   # Health check
+    networks:
+      - a2a-network
+
+  # Jaeger for A2A trace visualization
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: a2a-jaeger
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14268:14268"  # Jaeger collector
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - SPAN_STORAGE_TYPE=memory
+    networks:
+      - a2a-network
+
+networks:
+  a2a-network:
+    driver: bridge
+
+volumes:
+  logs:
+  results:
+  trace_files:

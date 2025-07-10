@@ -2,10 +2,11 @@
 # Real Google A2A Protocol Implementation
 
 # Core AI/Agent Libraries
-langchain
-langchain-openai
+langchain==0.2.1
+langgraph==0.0.49
+langchain-openai==0.1.7
+langchain-community==0.2.1
 langchain-core
-langgraph
 # OpenTelemetry & Observability  
 opentelemetry-api
 opentelemetry-sdk
@@ -16,7 +17,6 @@ traceloop-sdk
 
 # Azure OpenAI
 azure-identity
-
 # HTTP Server for A2A Protocol
 aiohttp
 asyncio-mqtt

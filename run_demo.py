@@ -98,7 +98,7 @@ def main():
         print("🔗 Agents will communicate via HTTP using A2A protocol")
         try:
             import asyncio
-            from a2a_demo import main as a2a_main
+            from a2a_demo_2 import main as a2a_main
             asyncio.run(a2a_main())
         except ImportError:
             print("❌ a2a_demo.py not found. Please ensure file exists.")
