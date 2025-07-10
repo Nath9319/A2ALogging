@@ -5,7 +5,34 @@ version: '3.8'
 
 services:
   # Research Agent (A2A Protocol)
-  researcher-agent:
+  # researcher-agent:
+  #   build: .
+  #   container_name: researcher-a2a
+  #   ports:
+  #     - "8001:8001"
+  #   environment:
+  #     - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+  #     - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+  #     - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
+  #     - OPENAI_API_VERSION=${OPENAI_API_VERSION}
+  #     - AGENT_TYPE=researcher
+  #     - AGENT_PORT=8001
+  #   volumes:
+  #     - ./logs:/app/logs
+  #   command: python -c "
+  #     import asyncio
+  #     from a2a_demo import ResearcherA2AAgent
+  #     async def run():
+  #         agent = ResearcherA2AAgent(8001)
+  #         await agent.start_server()
+  #         print('Researcher Agent ready on port 8001')
+  #         while True:
+  #             await asyncio.sleep(1)
+  #     asyncio.run(run())
+  #     "
+  #   networks:
+  #     - a2a-network
+    researcher-agent:
     build: .
     container_name: researcher-a2a
     ports:
@@ -34,7 +61,7 @@ services:
     networks:
       - a2a-network
 
-  # Analysis Agent (A2A Protocol)
+  # Analysis Agent (A2A Protocol)  
   analyst-agent:
     build: .
     container_name: analyst-a2a
@@ -49,8 +76,7 @@ services:
       - AGENT_PORT=8002
     volumes:
       - ./logs:/app/logs
-    command: |
-      python -c "
+    command: python -c "
       import asyncio
       from a2a_demo import AnalystA2AAgent
       async def run():
@@ -72,15 +98,14 @@ services:
       - "8003:8003"
     environment:
       - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
-      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}
+      - AZURE_OPENAI_API_KEY=${AZURE_OPENAI_API_KEY}  
       - AZURE_OPENAI_DEPLOYMENT_NAME=${AZURE_OPENAI_DEPLOYMENT_NAME}
       - OPENAI_API_VERSION=${OPENAI_API_VERSION}
       - AGENT_TYPE=reporter
       - AGENT_PORT=8003
     volumes:
       - ./logs:/app/logs
-    command: |
-      python -c "
+    command: python -c "
       import asyncio
       from a2a_demo import ReporterA2AAgent
       async def run():

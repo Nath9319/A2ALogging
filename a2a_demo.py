@@ -195,55 +195,20 @@ class A2AAgent:
             print(f"❌ Discovery error: {e}")
             return None
     
-    # @openlit.trace
-    # async def send_task_request(self, target_agent_id: str, task_type: str, parameters: Dict[str, Any]) -> Optional[TaskResponse]:
-    #     """Send task request to another agent via A2A protocol"""
-        
-    #     if target_agent_id not in self.discovered_agents:
-    #         print(f"❌ Agent {target_agent_id} not discovered yet")
-    #         return None
-        
-    #     target_agent = self.discovered_agents[target_agent_id]
-    #     task_id = str(uuid.uuid4())
-        
-    #     task_request = TaskRequest(
-    #         task_id=task_id,
-    #         requesting_agent=self.agent_card.agent_id,
-    #         target_agent=target_agent_id,
-    #         task_type=task_type,
-    #         parameters=parameters,
-    #         timestamp=datetime.now().isoformat()
-    #     )
-        
-    #     try:
-    #         async with aiohttp.ClientSession() as session:
-    #             async with session.post(f"{target_agent.endpoint}/task", json=asdict(task_request)) as resp:
-    #                 if resp.status == 200:
-    #                     data = await resp.json()
-    #                     response = TaskResponse(**data)
-    #                     print(f"✅ Task completed by {target_agent.name}")
-    #                     return response
-    #                 else:
-    #                     print(f"❌ Task failed: {resp.status}")
-    #                     return None
-    #     except Exception as e:
-    #         print(f"❌ Task error: {e}")
-    #         return None
-
-    # Add this new helper method to the A2AOrchestrator class
     @openlit.trace
     async def send_task_request(self, target_agent_id: str, task_type: str, parameters: Dict[str, Any]) -> Optional[TaskResponse]:
-        """Orchestrator sends a task request to a target agent."""
-        if target_agent_id not in self.agents:
-            print(f"❌ Orchestrator does not know agent {target_agent_id}")
+        """Send task request to another agent via A2A protocol"""
+        
+        if target_agent_id not in self.discovered_agents:
+            print(f"❌ Agent {target_agent_id} not discovered yet")
             return None
-
-        target_agent_card = self.agents[target_agent_id].agent_card
+        
+        target_agent = self.discovered_agents[target_agent_id]
         task_id = str(uuid.uuid4())
         
         task_request = TaskRequest(
             task_id=task_id,
-            requesting_agent="orchestrator-001",
+            requesting_agent=self.agent_card.agent_id,
             target_agent=target_agent_id,
             task_type=task_type,
             parameters=parameters,
@@ -252,16 +217,51 @@ class A2AAgent:
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(f"{target_agent_card.endpoint}/task", json=asdict(task_request)) as resp:
+                async with session.post(f"{target_agent.endpoint}/task", json=asdict(task_request)) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        return TaskResponse(**data)
+                        response = TaskResponse(**data)
+                        print(f"✅ Task completed by {target_agent.name}")
+                        return response
                     else:
-                        print(f"❌ Orchestrator task failed with status: {resp.status}")
+                        print(f"❌ Task failed: {resp.status}")
                         return None
         except Exception as e:
-            print(f"❌ Orchestrator task error: {e}")
+            print(f"❌ Task error: {e}")
             return None
+
+    # Add this new helper method to the A2AOrchestrator class
+    # @openlit.trace
+    # async def send_task_request(self, target_agent_id: str, task_type: str, parameters: Dict[str, Any]) -> Optional[TaskResponse]:
+    #     """Orchestrator sends a task request to a target agent."""
+    #     if target_agent_id not in self.agents:
+    #         print(f"❌ Orchestrator does not know agent {target_agent_id}")
+    #         return None
+
+    #     target_agent_card = self.agents[target_agent_id].agent_card
+    #     task_id = str(uuid.uuid4())
+        
+    #     task_request = TaskRequest(
+    #         task_id=task_id,
+    #         requesting_agent="orchestrator-001",
+    #         target_agent=target_agent_id,
+    #         task_type=task_type,
+    #         parameters=parameters,
+    #         timestamp=datetime.now().isoformat()
+    #     )
+        
+    #     try:
+    #         async with aiohttp.ClientSession() as session:
+    #             async with session.post(f"{target_agent_card.endpoint}/task", json=asdict(task_request)) as resp:
+    #                 if resp.status == 200:
+    #                     data = await resp.json()
+    #                     return TaskResponse(**data)
+    #                 else:
+    #                     print(f"❌ Orchestrator task failed with status: {resp.status}")
+    #                     return None
+    #     except Exception as e:
+    #         print(f"❌ Orchestrator task error: {e}")
+    #         return None
 
     async def process_task(self, task_request: TaskRequest) -> Dict[str, Any]:
         """Process task - to be implemented by specific agents"""
@@ -384,7 +384,39 @@ class A2AOrchestrator:
         self.agents[agent.agent_card.agent_id] = agent
         await agent.start_server()
         await asyncio.sleep(1)  # Give server time to start
-    
+
+    @openlit.trace
+    async def send_task_request(self, target_agent_id: str, task_type: str, parameters: Dict[str, Any]) -> Optional[TaskResponse]:
+        """Orchestrator sends a task request to a target agent."""
+        if target_agent_id not in self.agents:
+            print(f"❌ Orchestrator does not know agent {target_agent_id}")
+            return None
+
+        target_agent_card = self.agents[target_agent_id].agent_card
+        task_id = str(uuid.uuid4())
+        
+        task_request = TaskRequest(
+            task_id=task_id,
+            requesting_agent="orchestrator-001",
+            target_agent=target_agent_id,
+            task_type=task_type,
+            parameters=parameters,
+            timestamp=datetime.now().isoformat()
+        )
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(f"{target_agent_card.endpoint}/task", json=asdict(task_request)) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        return TaskResponse(**data)
+                    else:
+                        print(f"❌ Orchestrator task failed with status: {resp.status}")
+                        return None
+        except Exception as e:
+            print(f"❌ Orchestrator task error: {e}")
+            return None    
+
     @openlit.trace
     async def discover_all_agents(self):
         """Make all agents discover each other"""
@@ -536,6 +568,8 @@ class A2AOrchestrator:
         print(f"📊 Final Report: {final_report}")
         
         return result
+
+
     
 # async def main():
 #     """Main A2A demo function"""
