@@ -40,7 +40,7 @@ print()
 # Option 1: Console logging (immediate output)
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-
+from traceloop.sdk import Traceloop
 # For local development - see traces immediately in console
 openlit.init()  # No endpoint = console output only
 

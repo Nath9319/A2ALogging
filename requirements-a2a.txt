@@ -5,7 +5,7 @@
 langchain
 langchain-openai
 langchain-core
-
+langgraph
 # OpenTelemetry & Observability  
 opentelemetry-api
 opentelemetry-sdk

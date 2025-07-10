@@ -195,20 +195,55 @@ class A2AAgent:
             print(f"❌ Discovery error: {e}")
             return None
     
+    # @openlit.trace
+    # async def send_task_request(self, target_agent_id: str, task_type: str, parameters: Dict[str, Any]) -> Optional[TaskResponse]:
+    #     """Send task request to another agent via A2A protocol"""
+        
+    #     if target_agent_id not in self.discovered_agents:
+    #         print(f"❌ Agent {target_agent_id} not discovered yet")
+    #         return None
+        
+    #     target_agent = self.discovered_agents[target_agent_id]
+    #     task_id = str(uuid.uuid4())
+        
+    #     task_request = TaskRequest(
+    #         task_id=task_id,
+    #         requesting_agent=self.agent_card.agent_id,
+    #         target_agent=target_agent_id,
+    #         task_type=task_type,
+    #         parameters=parameters,
+    #         timestamp=datetime.now().isoformat()
+    #     )
+        
+    #     try:
+    #         async with aiohttp.ClientSession() as session:
+    #             async with session.post(f"{target_agent.endpoint}/task", json=asdict(task_request)) as resp:
+    #                 if resp.status == 200:
+    #                     data = await resp.json()
+    #                     response = TaskResponse(**data)
+    #                     print(f"✅ Task completed by {target_agent.name}")
+    #                     return response
+    #                 else:
+    #                     print(f"❌ Task failed: {resp.status}")
+    #                     return None
+    #     except Exception as e:
+    #         print(f"❌ Task error: {e}")
+    #         return None
+
+    # Add this new helper method to the A2AOrchestrator class
     @openlit.trace
     async def send_task_request(self, target_agent_id: str, task_type: str, parameters: Dict[str, Any]) -> Optional[TaskResponse]:
-        """Send task request to another agent via A2A protocol"""
-        
-        if target_agent_id not in self.discovered_agents:
-            print(f"❌ Agent {target_agent_id} not discovered yet")
+        """Orchestrator sends a task request to a target agent."""
+        if target_agent_id not in self.agents:
+            print(f"❌ Orchestrator does not know agent {target_agent_id}")
             return None
-        
-        target_agent = self.discovered_agents[target_agent_id]
+
+        target_agent_card = self.agents[target_agent_id].agent_card
         task_id = str(uuid.uuid4())
         
         task_request = TaskRequest(
             task_id=task_id,
-            requesting_agent=self.agent_card.agent_id,
+            requesting_agent="orchestrator-001",
             target_agent=target_agent_id,
             task_type=task_type,
             parameters=parameters,
@@ -217,19 +252,17 @@ class A2AAgent:
         
         try:
             async with aiohttp.ClientSession() as session:
-                async with session.post(f"{target_agent.endpoint}/task", json=asdict(task_request)) as resp:
+                async with session.post(f"{target_agent_card.endpoint}/task", json=asdict(task_request)) as resp:
                     if resp.status == 200:
                         data = await resp.json()
-                        response = TaskResponse(**data)
-                        print(f"✅ Task completed by {target_agent.name}")
-                        return response
+                        return TaskResponse(**data)
                     else:
-                        print(f"❌ Task failed: {resp.status}")
+                        print(f"❌ Orchestrator task failed with status: {resp.status}")
                         return None
         except Exception as e:
-            print(f"❌ Task error: {e}")
+            print(f"❌ Orchestrator task error: {e}")
             return None
-    
+
     async def process_task(self, task_request: TaskRequest) -> Dict[str, Any]:
         """Process task - to be implemented by specific agents"""
         raise NotImplementedError("Subclasses must implement process_task")
@@ -367,32 +400,94 @@ class A2AOrchestrator:
         
         print("✅ Agent discovery completed")
     
+    # @openlit.trace
+    # async def run_a2a_workflow(self, query: str) -> Dict[str, Any]:
+    #     """Run multi-agent workflow using A2A protocol"""
+        
+    #     print(f"🚀 Starting A2A Workflow: {query}")
+        
+    #     # Get agent references
+    #     researcher = None
+    #     analyst = None
+    #     reporter = None
+        
+    #     for agent in self.agents.values():
+    #         if "research" in agent.agent_card.capabilities:
+    #             researcher = agent
+    #         elif "analysis" in agent.agent_card.capabilities:
+    #             analyst = agent
+    #         elif "reporting" in agent.agent_card.capabilities:
+    #             reporter = agent
+        
+    #     if not all([researcher, analyst, reporter]):
+    #         raise ValueError("Missing required agents")
+        
+    #     # Step 1: Research (A2A communication)
+    #     print("📊 Step 1: Research phase...")
+    #     research_response = await researcher.send_task_request(
+    #         target_agent_id=researcher.agent_card.agent_id,
+    #         task_type="research",
+    #         parameters={"topic": query}
+    #     )
+        
+    #     if not research_response or research_response.status != "success":
+    #         raise Exception("Research task failed")
+        
+    #     research_data = research_response.result["research_data"]
+        
+    #     # Step 2: Analysis (A2A communication)
+    #     print("🔍 Step 2: Analysis phase...")
+    #     analysis_response = await analyst.send_task_request(
+    #         target_agent_id=analyst.agent_card.agent_id,
+    #         task_type="analyze", 
+    #         parameters={"research_data": research_data}
+    #     )
+        
+    #     if not analysis_response or analysis_response.status != "success":
+    #         raise Exception("Analysis task failed")
+        
+    #     analysis_data = analysis_response.result["analysis_result"]
+        
+    #     # Step 3: Reporting (A2A communication)
+    #     print("📝 Step 3: Reporting phase...")
+    #     report_response = await reporter.send_task_request(
+    #         target_agent_id=reporter.agent_card.agent_id,
+    #         task_type="report",
+    #         parameters={"analysis_data": analysis_data}
+    #     )
+        
+    #     if not report_response or report_response.status != "success":
+    #         raise Exception("Reporting task failed")
+        
+    #     final_report = report_response.result["final_report"]
+        
+    #     result = {
+    #         "query": query,
+    #         "research_data": research_data,
+    #         "analysis_data": analysis_data,
+    #         "final_report": final_report,
+    #         "workflow_complete": True,
+    #         "agents_used": [
+    #             researcher.agent_card.agent_id,
+    #             analyst.agent_card.agent_id,
+    #             reporter.agent_card.agent_id
+    #         ]
+    #     }
+        
+    #     print("✅ A2A Workflow completed successfully!")
+    #     print(f"📊 Final Report: {final_report}")
+        
+    #     return result
     @openlit.trace
     async def run_a2a_workflow(self, query: str) -> Dict[str, Any]:
         """Run multi-agent workflow using A2A protocol"""
         
         print(f"🚀 Starting A2A Workflow: {query}")
         
-        # Get agent references
-        researcher = None
-        analyst = None
-        reporter = None
-        
-        for agent in self.agents.values():
-            if "research" in agent.agent_card.capabilities:
-                researcher = agent
-            elif "analysis" in agent.agent_card.capabilities:
-                analyst = agent
-            elif "reporting" in agent.agent_card.capabilities:
-                reporter = agent
-        
-        if not all([researcher, analyst, reporter]):
-            raise ValueError("Missing required agents")
-        
-        # Step 1: Research (A2A communication)
+        # Step 1: Research (Orchestrator sends task to Researcher)
         print("📊 Step 1: Research phase...")
-        research_response = await researcher.send_task_request(
-            target_agent_id=researcher.agent_card.agent_id,
+        research_response = await self.send_task_request(
+            target_agent_id="researcher-001",
             task_type="research",
             parameters={"topic": query}
         )
@@ -402,10 +497,10 @@ class A2AOrchestrator:
         
         research_data = research_response.result["research_data"]
         
-        # Step 2: Analysis (A2A communication)
+        # Step 2: Analysis (Orchestrator sends task to Analyst)
         print("🔍 Step 2: Analysis phase...")
-        analysis_response = await analyst.send_task_request(
-            target_agent_id=analyst.agent_card.agent_id,
+        analysis_response = await self.send_task_request(
+            target_agent_id="analyst-001",
             task_type="analyze", 
             parameters={"research_data": research_data}
         )
@@ -415,10 +510,10 @@ class A2AOrchestrator:
         
         analysis_data = analysis_response.result["analysis_result"]
         
-        # Step 3: Reporting (A2A communication)
+        # Step 3: Reporting (Orchestrator sends task to Reporter)
         print("📝 Step 3: Reporting phase...")
-        report_response = await reporter.send_task_request(
-            target_agent_id=reporter.agent_card.agent_id,
+        report_response = await self.send_task_request(
+            target_agent_id="reporter-001",
             task_type="report",
             parameters={"analysis_data": analysis_data}
         )
@@ -434,17 +529,51 @@ class A2AOrchestrator:
             "analysis_data": analysis_data,
             "final_report": final_report,
             "workflow_complete": True,
-            "agents_used": [
-                researcher.agent_card.agent_id,
-                analyst.agent_card.agent_id,
-                reporter.agent_card.agent_id
-            ]
+            "agents_used": ["researcher-001", "analyst-001", "reporter-001"]
         }
         
         print("✅ A2A Workflow completed successfully!")
         print(f"📊 Final Report: {final_report}")
         
         return result
+    
+# async def main():
+#     """Main A2A demo function"""
+#     print("🌐 Starting Google A2A Protocol Demo")
+#     print("=" * 50)
+    
+#     # Create orchestrator
+#     orchestrator = A2AOrchestrator()
+    
+#     # Create A2A agents
+#     researcher = ResearcherA2AAgent(port=8001)
+#     analyst = AnalystA2AAgent(port=8002)
+#     reporter = ReporterA2AAgent(port=8003)
+    
+#     try:
+#         # Add agents to orchestrator
+#         await orchestrator.add_agent(researcher)
+#         await orchestrator.add_agent(analyst)
+#         await orchestrator.add_agent(reporter)
+        
+#         # Agent discovery phase
+#         await orchestrator.discover_all_agents()
+        
+#         # Run A2A workflow
+#         query = "What are the benefits of using OpenTelemetry for AI applications?"
+#         result = await orchestrator.run_a2a_workflow(query)
+        
+#         # Save results locally
+#         with open("a2a_workflow_results.json", "w") as f:
+#             json.dump(result, f, indent=2)
+        
+#         print("\n📁 Results saved to: a2a_workflow_results.json")
+        
+#     except KeyboardInterrupt:
+#         print("\n👋 Shutting down A2A demo...")
+#     except Exception as e:
+#         print(f"\n❌ Error: {e}")
+
 
 async def main():
     """Main A2A demo function"""
@@ -472,17 +601,24 @@ async def main():
         query = "What are the benefits of using OpenTelemetry for AI applications?"
         result = await orchestrator.run_a2a_workflow(query)
         
-        # Save results locally
-        with open("a2a_workflow_results.json", "w") as f:
+        # --- MODIFICATION START ---
+        # Ensure the results directory exists inside the container
+        results_dir = "/app/results"
+        os.makedirs(results_dir, exist_ok=True)
+        
+        # Save results to the mounted volume
+        results_path = os.path.join(results_dir, "a2a_workflow_results.json")
+        with open(results_path, "w") as f:
             json.dump(result, f, indent=2)
         
-        print("\n📁 Results saved to: a2a_workflow_results.json")
+        print(f"\n📁 Results saved to: {results_path} (locally at ./results/a2a_workflow_results.json)")
+        # --- MODIFICATION END ---
         
     except KeyboardInterrupt:
         print("\n👋 Shutting down A2A demo...")
     except Exception as e:
         print(f"\n❌ Error: {e}")
-
+        
 if __name__ == "__main__":
     import os
     asyncio.run(main())
