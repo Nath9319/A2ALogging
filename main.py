@@ -10,6 +10,31 @@ from langchain_openai import AzureChatOpenAI
 from langchain_core.messages import HumanMessage, AIMessage
 import openlit
 from traceloop.sdk import Traceloop
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Verify required environment variables
+required_vars = [
+    'AZURE_OPENAI_ENDPOINT',
+    'AZURE_OPENAI_DEPLOYMENT_NAME',
+    'AZURE_OPENAI_API_KEY',
+    'OPENAI_API_VERSION'
+]
+
+missing_vars = [var for var in required_vars if not os.getenv(var)]
+if missing_vars:
+    print(f"❌ Missing required environment variables: {missing_vars}")
+    print("📝 Please check your .env file")
+    exit(1)
+
+print("✅ Environment variables loaded from .env file:")
+print(f"   🔗 Endpoint: {os.getenv('AZURE_OPENAI_ENDPOINT')}")
+print(f"   🚀 Deployment: {os.getenv('AZURE_OPENAI_DEPLOYMENT_NAME')}")
+print(f"   📅 API Version: {os.getenv('OPENAI_API_VERSION')}")
+print(f"   🔑 API Key: {'*' * 20}...{os.getenv('AZURE_OPENAI_API_KEY', '')[-4:]}")
+print()
 
 # Initialize OpenTelemetry observability - COMPLETELY LOCAL
 # Option 1: Console logging (immediate output)
@@ -44,8 +69,8 @@ class SimpleAgent:
         self.role = role
         self.llm = AzureChatOpenAI(
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-            azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-            api_version="2024-02-15-preview",
+            azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
+            api_version=os.getenv("OPENAI_API_VERSION"),
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
             temperature=0.1
         )

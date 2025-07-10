@@ -1,6 +1,7 @@
 # Real Google A2A Protocol Implementation
 # File: a2a_demo.py
 
+import os
 import json
 import asyncio
 import uuid
@@ -11,6 +12,30 @@ import aiohttp
 from langchain_openai import AzureChatOpenAI
 import openlit
 from traceloop.sdk import Traceloop
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# Verify required environment variables
+required_vars = [
+    'AZURE_OPENAI_ENDPOINT',
+    'AZURE_OPENAI_DEPLOYMENT_NAME', 
+    'AZURE_OPENAI_API_KEY',
+    'OPENAI_API_VERSION'
+]
+
+missing_vars = [var for var in required_vars if not os.getenv(var)]
+if missing_vars:
+    print(f"❌ Missing required environment variables: {missing_vars}")
+    print("📝 Please check your .env file")
+    exit(1)
+
+print("✅ Environment variables loaded successfully:")
+print(f"   🔗 Endpoint: {os.getenv('AZURE_OPENAI_ENDPOINT')}")
+print(f"   🚀 Deployment: {os.getenv('AZURE_OPENAI_DEPLOYMENT_NAME')}")
+print(f"   📅 API Version: {os.getenv('OPENAI_API_VERSION')}")
+print(f"   🔑 API Key: {'*' * 20}...{os.getenv('AZURE_OPENAI_API_KEY', '')[-4:]}")
 
 # Initialize OpenTelemetry for A2A communication
 openlit.init()
@@ -60,8 +85,8 @@ class A2AAgent:
         self.discovered_agents: Dict[str, AgentCard] = {}
         self.llm = AzureChatOpenAI(
             azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-            azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT"),
-            api_version="2024-02-15-preview",
+            azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT_NAME"),
+            api_version=os.getenv("OPENAI_API_VERSION"),
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
             temperature=0.1
         )
