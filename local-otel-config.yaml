@@ -1,0 +1,67 @@
+# local-otel-config.yaml
+# Completely local OpenTelemetry collector - saves to files only
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 100
+  
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 200
+
+exporters:
+  # File exporter - saves traces to local JSON files
+  file:
+    path: /traces/traces.json
+    format: json
+  
+  # File exporter for metrics
+  file/metrics:
+    path: /traces/metrics.json
+    format: json
+  
+  # File exporter for logs  
+  file/logs:
+    path: /logs/logs.json
+    format: json
+  
+  # Console output for immediate viewing
+  logging:
+    loglevel: info
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  
+  file_storage:
+    directory: /traces
+    timeout: 1s
+
+service:
+  extensions: [health_check, file_storage]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [file, logging]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [file/metrics, logging]
+    
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [file/logs, logging]
